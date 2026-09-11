@@ -6,7 +6,7 @@ type vendor_hal_displayfeature_xiaomi_service, protected_service, service_manage
 allow vendor_hal_displayfeature_xiaomi_default fwk_sensor_hwservice:hwservice_manager find;
 allow vendor_hal_displayfeature_xiaomi_default graphics_device:chr_file rw_file_perms;
 allow vendor_hal_displayfeature_xiaomi_default hal_graphics_composer_default:binder call;
-allow vendor_hal_displayfeature_xiaomi_default hwservicemanager:binder call;
+hwbinder_use(vendor_hal_displayfeature_xiaomi_default)
 allow vendor_hal_displayfeature_xiaomi_default mnt_vendor_file:dir search;
 
 # Read factory panel calibration tables without modifying persist.
