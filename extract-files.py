@@ -90,6 +90,7 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/lib64/libqcodec2_core.so': blob_fixup()
         .add_needed('libcodec2_shim.so'),
     (
+        'odm/lib64/hw/displayfeature.default.so',
         'vendor.qti.hardware.display.composer-service',
         'vendor/lib64/libsnapdragoncolor-manager.so',
         'vendor/lib64/libdpps.so',
