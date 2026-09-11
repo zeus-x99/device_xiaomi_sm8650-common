@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "vendor.qti.media.c2audio@1.0-service",
+    vendor: true,
+    compile_multilib: "64",
+    relative_install_path: "hw",
+    defaults: ["libcodec2-hidl-defaults"],
+    srcs: ["service.cpp"],
+    shared_libs: [
+        "libavservices_minijail",
+        "libbinder",
+        "libshim",
+        "//vendor/xiaomi/sm8650-common:libqc2audio_core",
+    ],
+}
+
+cc_binary {
+    name: "vendor.qti.media.c2@1.0-service",
+    vendor: true,
+    compile_multilib: "64",
+    relative_install_path: "hw",
+    defaults: ["libcodec2-hidl-defaults"],
+    srcs: ["service.cpp"],
+    cflags: ["-DQTI_VIDEO_CODEC"],
+    shared_libs: [
+        "libavservices_minijail",
+        "libbinder",
+        "libshim",
+        "//vendor/xiaomi/sm8650-common:libqcodec2_core",
+    ],
+}
