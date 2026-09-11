@@ -15,6 +15,11 @@ add_service(hal_touchfeature_xiaomi_server, hal_touchfeature_xiaomi_service)
 
 binder_call(hal_touchfeature_xiaomi_default, servicemanager)
 
+# Receive sensor events from the framework sensor service.
+allow hal_touchfeature_xiaomi_default fwk_sensor_hwservice:hwservice_manager find;
+hwbinder_use(hal_touchfeature_xiaomi_default)
+binder_call(hal_touchfeature_xiaomi_default, system_server)
+
 hal_server_domain(hal_touchfeature_xiaomi_default, hal_touchfeature_xiaomi)
 
 init_daemon_domain(hal_touchfeature_xiaomi_default)
