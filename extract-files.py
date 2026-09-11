@@ -52,8 +52,15 @@ lib_fixups: lib_fixups_user_type = {
 
 blob_fixups: blob_fixups_user_type = {
     (
+        'vendor/etc/media_codecs.xml',
+        'vendor/etc/media_codecs_pineapple.xml',
+    ): blob_fixup()
+        .regex_replace(
+            r'(<Include href="media_codecs_c2_audio.xml"\s*/>)(?!\s*<Include href="media_codecs_dolby_audio.xml")',
+            r'\1\n    <Include href="media_codecs_dolby_audio.xml" />'
+        ),
+    (
         'vendor/bin/hw/vendor.qti.media.c2@1.0-service',
-        'vendor/bin/hw/vendor.dolby.media.c2@1.0-service',
         'vendor/bin/hw/vendor.qti.media.c2audio@1.0-service'
     ): blob_fixup()
         .add_needed('libshim.so'),

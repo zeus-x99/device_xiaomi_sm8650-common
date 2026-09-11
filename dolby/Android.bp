@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "vendor.dolby.media.c2@1.0-service",
+    vendor: true,
+    compile_multilib: "64",
+    relative_install_path: "hw",
+    defaults: ["libcodec2-hidl-defaults"],
+    srcs: ["service.cpp"],
+    shared_libs: [
+        "libbinder",
+        "libshim",
+        "//vendor/xiaomi/sm8650-common:libcodec2_store_dolby",
+    ],
+}

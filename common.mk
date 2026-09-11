@@ -440,3 +440,6 @@ PRODUCT_PACKAGES += \
 # WiFi Display
 PRODUCT_PACKAGES += \
     libwfdaac_vendor
+
+# Build the Dolby Codec2 service wrapper against the current platform ABI.
+PRODUCT_PACKAGES += vendor.dolby.media.c2@1.0-service
