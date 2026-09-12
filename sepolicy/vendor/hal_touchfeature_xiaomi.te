@@ -7,6 +7,7 @@ allow hal_touchfeature_xiaomi_default vendor_touchfeature_prop:file { getattr op
 allow hal_touchfeature_xiaomi_default proc_tp_file:file { open read write };
 allow hal_touchfeature_xiaomi_default self:capability sys_nice;
 allow hal_touchfeature_xiaomi_default sysfs_touch_hostprocess:file { open read write };
+allow hal_touchfeature_xiaomi_default sysfs_tp_fodstatus:file { open read write };
 allow hal_touchfeature_xiaomi_default touchfeature_device:chr_file { ioctl map open read write };
 allow hal_touchfeature_xiaomi_default input_device:dir { read open search };
 allow hal_touchfeature_xiaomi_default input_device:chr_file rw_file_perms;
