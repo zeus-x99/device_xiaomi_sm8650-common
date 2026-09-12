@@ -10,7 +10,12 @@
 #include <android-base/logging.h>
 #include <android-base/unique_fd.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <chrono>
 #include <fstream>
+#include <thread>
 
 #include "UdfpsHandler.h"
 
@@ -41,6 +46,42 @@ template <typename T>
 static void set(const std::string& path, const T& value) {
     std::ofstream file(path);
     file << value;
+}
+
+static bool setLocalHbm(bool enabled) {
+    using namespace std::chrono_literals;
+    const auto start = std::chrono::steady_clock::now();
+    const auto deadline = start + 500ms;
+    const std::string value = std::string(DISP_PARAM_LOCAL_HBM_MODE) + " " +
+            (enabled ? DISP_PARAM_LOCAL_HBM_ON : DISP_PARAM_LOCAL_HBM_OFF);
+
+    // A doze pulse can reach the fingerprint HAL before the panel is initialized.
+    // Retry that transient driver error, and never announce HBM readiness on failure.
+    while (true) {
+        android::base::unique_fd fd(TEMP_FAILURE_RETRY(open(DISP_PARAM_PATH, O_WRONLY | O_CLOEXEC)));
+        if (fd.get() < 0) {
+            PLOG(ERROR) << "Unable to open local HBM control";
+            return false;
+        }
+        const auto written = TEMP_FAILURE_RETRY(write(fd.get(), value.data(), value.size()));
+        const int error = errno;
+        if (written == static_cast<ssize_t>(value.size())) {
+            if (enabled) {
+                LOG(INFO) << "Local HBM enabled after "
+                          << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                     std::chrono::steady_clock::now() - start).count()
+                          << " ms";
+            }
+            return true;
+        }
+        if (!enabled || written >= 0 || error != ENODEV ||
+            std::chrono::steady_clock::now() >= deadline) {
+            LOG(ERROR) << "Unable to set local HBM to " << enabled
+                       << ": written=" << written << ", errno=" << error;
+            return false;
+        }
+        std::this_thread::sleep_for(20ms);
+    }
 }
 
 }  // anonymous namespace
@@ -96,14 +137,15 @@ class XiaomiSM8650UdfpsHander : public UdfpsHandler {
     }
 
     void setFingerDown(bool pressed) {
-        mDevice->extCmd(mDevice, COMMAND_NIT, pressed ? PARAM_NIT_FOD : PARAM_NIT_NONE);
-
-        set(DISP_PARAM_PATH,
-            std::string(DISP_PARAM_LOCAL_HBM_MODE) + " " +
-                    (pressed ? DISP_PARAM_LOCAL_HBM_ON : DISP_PARAM_LOCAL_HBM_OFF));
-
         if (pressed) {
+            if (!setLocalHbm(true)) {
+                return;
+            }
+            mDevice->extCmd(mDevice, COMMAND_NIT, PARAM_NIT_FOD);
             mDevice->extCmd(mDevice, COMMAND_FOD_PRESS_STATUS, PARAM_FOD_PRESSED);
+        } else {
+            mDevice->extCmd(mDevice, COMMAND_NIT, PARAM_NIT_NONE);
+            setLocalHbm(false);
         }
     }
 };
