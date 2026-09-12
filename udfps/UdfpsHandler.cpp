@@ -9,15 +9,18 @@
 #include <aidl/android/hardware/biometrics/fingerprint/BnFingerprint.h>
 #include <android-base/logging.h>
 #include <android-base/unique_fd.h>
+#include <android-base/properties.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <chrono>
 #include <fstream>
 #include <thread>
 
 #include "UdfpsHandler.h"
+#include "LocalHbm.h"
 
 #define COMMAND_NIT 10
 #define PARAM_NIT_FOD 1
@@ -80,7 +83,7 @@ static bool setLocalHbm(bool enabled) {
                        << ": written=" << written << ", errno=" << error;
             return false;
         }
-        std::this_thread::sleep_for(20ms);
+        std::this_thread::sleep_for(10ms);
     }
 }
 
@@ -90,6 +93,8 @@ class XiaomiSM8650UdfpsHander : public UdfpsHandler {
   public:
     void init(fingerprint_device_t* device) {
         mDevice = device;
+        mUsePanelReadyEvent = android::base::GetBoolProperty(
+                "ro.vendor.fingerprint.lhbm_ready_event", false);
     }
 
     void onFingerDown(uint32_t /*x*/, uint32_t /*y*/, float /*minor*/, float /*major*/) {
@@ -104,6 +109,13 @@ class XiaomiSM8650UdfpsHander : public UdfpsHandler {
 
     void onAcquired(int32_t result, int32_t vendorCode) {
         LOG(INFO) << __func__ << " result: " << result << " vendorCode: " << vendorCode;
+        const auto acquired = static_cast<AcquiredInfo>(result);
+        // These notifications do not finish image capture. Keep illumination available
+        // while the sensor starts or retries, and ignore uninitialized status values.
+        if (acquired == AcquiredInfo::UNKNOWN || acquired == AcquiredInfo::START ||
+            acquired == AcquiredInfo::RETRYING_CAPTURE) {
+            return;
+        }
         if (result != FINGERPRINT_ACQUIRED_VENDOR) {
             setFingerDown(false);
             if (static_cast<AcquiredInfo>(result) == AcquiredInfo::GOOD) {
@@ -131,6 +143,8 @@ class XiaomiSM8650UdfpsHander : public UdfpsHandler {
 
   private:
     fingerprint_device_t* mDevice;
+    LocalHbm mLocalHbm;
+    bool mUsePanelReadyEvent = false;
 
     void setFodStatus(int value) {
         set(FOD_STATUS_PATH, value);
@@ -138,14 +152,18 @@ class XiaomiSM8650UdfpsHander : public UdfpsHandler {
 
     void setFingerDown(bool pressed) {
         if (pressed) {
-            if (!setLocalHbm(true)) {
+            if (!(mUsePanelReadyEvent ? mLocalHbm.enable() : setLocalHbm(true))) {
                 return;
             }
             mDevice->extCmd(mDevice, COMMAND_NIT, PARAM_NIT_FOD);
             mDevice->extCmd(mDevice, COMMAND_FOD_PRESS_STATUS, PARAM_FOD_PRESSED);
         } else {
             mDevice->extCmd(mDevice, COMMAND_NIT, PARAM_NIT_NONE);
-            setLocalHbm(false);
+            if (mUsePanelReadyEvent) {
+                mLocalHbm.disable();
+            } else {
+                setLocalHbm(false);
+            }
         }
     }
 };
