@@ -60,6 +60,10 @@ blob_fixups: blob_fixups_user_type = {
         .regex_replace(
             r'(<Include href="media_codecs_c2_audio.xml"\s*/>)(?!\s*<Include href="media_codecs_dolby_audio.xml")',
             r'\1\n    <Include href="media_codecs_dolby_audio.xml" />'
+        )
+        .regex_replace(
+            r'(<Include href="media_codecs_dolby_audio.xml"\s*/>)(?!\s*<Include href="media_codecs_dolby_vision.xml")',
+            r'\1\n    <Include href="media_codecs_dolby_vision.xml" />'
         ),
     (
         'vendor/etc/media_codecs_pinaepple.xml', 
